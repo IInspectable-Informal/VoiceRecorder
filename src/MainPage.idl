@@ -1,0 +1,14 @@
+namespace VoiceRecorder
+{
+    [default_interface]
+    runtimeclass MainPage : Windows.UI.Xaml.Controls.Page , Windows.UI.Xaml.Data.IValueConverter
+    {
+        MainPage();
+        Windows.Media.Playback.MediaPlayer Player{ get; };
+
+        static String AppName{ get; };
+        static Windows.Foundation.Uri AppIcon { get; };
+        static String Developer{ get; };
+        static String Version{ get; };
+    }
+}

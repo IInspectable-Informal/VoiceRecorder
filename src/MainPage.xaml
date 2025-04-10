@@ -1,0 +1,261 @@
+﻿<Page
+    x:Class="VoiceRecorder.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:VoiceRecorder"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    mc:Ignorable="d"
+    muxc:BackdropMaterial.ApplyToRootOrPageBackground="True">
+
+    <Page.Resources>
+        <ResourceDictionary>
+            <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource SymbolThemeFontFamily}"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Width" Value="32"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource ButtonForeground}"/>
+            </Style>
+            <Style x:Key="TileStyle" TargetType="Grid">
+                <Setter Property="Background" Value="{ThemeResource ExpanderContentBackground}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource ExpanderContentBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="1, 1, 1, 0"/>
+                <Setter Property="Padding" Value="8"/>
+            </Style>
+            <Style x:Key="ContentPanelStyle" TargetType="StackPanel">
+                <Setter Property="ChildrenTransitions">
+                    <Setter.Value>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="100" IsStaggeringEnabled="True"/>
+                            <RepositionThemeTransition IsStaggeringEnabled="True"/>
+                        </TransitionCollection>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <local:MainPage x:Key="SelfConverter"/>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel x:Name="AppTitleBar" ActualThemeChanged="ChangeTitleBarTheme" Orientation="Horizontal" Background="Transparent" HorizontalAlignment="Stretch">
+            <muxc:ImageIcon Source="Assets\Square44x44Logo.png" Height="24" HorizontalAlignment="Left" Margin="4,4,5,4"/>
+            <TextBlock Text="{x:Bind local:MainPage.AppName}" FontSize="15" VerticalAlignment="Center"/>
+        </StackPanel>
+        <ScrollViewer VerticalScrollMode="Auto" VerticalScrollBarVisibility="Auto" Padding="5,5,19,5" Grid.Row="1">
+            <StackPanel Spacing="5" Style="{StaticResource ContentPanelStyle}">
+                <muxc:InfoBar x:Name="Info" IsOpen="False"/>
+                <StackPanel Style="{StaticResource ContentPanelStyle}">
+                    <Grid CornerRadius="4,4,0,0" Style="{ThemeResource TileStyle}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="4"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Grid.RowSpan="3">
+                            <Button x:Name="RecordButton" Content="&#xE7C8;" Click="Record_Control" ToolTipService.ToolTip="录音" IsEnabled="False" Style="{StaticResource IconButtonStyle}"/>
+                            <Button x:Name="StopButton" Content="&#xEE95;" Click="StopRecord" ToolTipService.ToolTip="停止" IsEnabled="False" Style="{StaticResource IconButtonStyle}"/>
+                        </StackPanel>
+                        <TextBlock x:Name="DurationDisplayer" Text="00 : 00 : 00 . 00" Style="{StaticResource SubheaderTextBlockStyle}" Grid.Column="2"/>
+                        <muxc:ProgressBar x:Name="LoudnessDisplayer" HorizontalAlignment="Stretch" Grid.Row="2" Grid.Column="2"/>
+                    </Grid>
+                    <muxc:Expander IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="0,0,4,4">
+                        <muxc:Expander.Header>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE90F;" HorizontalAlignment="Left"/>
+                                <TextBlock Text="录制参数" VerticalAlignment="Center" Margin="5,0,0,0" Grid.Column="1"/>
+                            </Grid>
+                        </muxc:Expander.Header>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE720;"/>
+                            <TextBlock Text="录音设备" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,5,0" Grid.Column="1"/>
+                            <ComboBox x:Name="SelectedDevice" HorizontalAlignment="Right" Grid.Column="2">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="wde:DeviceInformation" xmlns:wde="using:Windows.Devices.Enumeration">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20"/>
+                                                <ColumnDefinition Width="5"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Glyph="&#xE720;"/>
+                                            <TextBlock Text="{x:Bind Name}" TextWrapping="Wrap" Grid.Column="2"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                                <ComboBox.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="刷新" Click="RefreshAudioInputDevices">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE72C;"/>
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </ComboBox.ContextFlyout>
+                            </ComboBox>
+
+                            <FontIcon Glyph="&#xE8D6;" Grid.Row="2"/>
+                            <TextBlock Text="音质" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,5,0" Grid.Row="2" Grid.Column="1"/>
+                            <ComboBox x:Name="AudioQuality" PlaceholderText="请选择音质" HorizontalAlignment="Right" Grid.Row="2" Grid.Column="2">
+                                <x:String>自动</x:String>
+                                <x:String>高</x:String>
+                                <x:String>中</x:String>
+                                <x:String>低</x:String>
+                            </ComboBox>
+
+                            <FontIcon Glyph="&#xE97C;" Grid.Row="4"/>
+                            <TextBlock Text="录音文件格式" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,5,0" Grid.Row="4" Grid.Column="1"/>
+                            <ComboBox x:Name="Formats" PlaceholderText="请选择录音文件格式" HorizontalAlignment="Right" Grid.Row="4" Grid.Column="2">
+                                <x:String>alac</x:String>
+                                <x:String>flac</x:String>
+                                <x:String>m4a</x:String>
+                                <x:String>mp3</x:String>
+                                <x:String>wav</x:String>
+                                <x:String>wma</x:String>
+                            </ComboBox>
+
+                            <FontIcon Glyph="&#xE8B7;" Grid.Row="6"/>
+                            <TextBlock Text="保存位置" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,5,0" Grid.Row="6" Grid.Column="1"/>
+                            <TextBox x:Name="PathDisplayer" IsReadOnly="True" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,110,0" Grid.Row="6" Grid.Column="2"/>
+                            <Button x:Name="PickButton" Click="PickFolder" HorizontalAlignment="Right" Grid.Row="6" Grid.Column="2">
+                                <StackPanel Orientation="Horizontal">
+                                    <FontIcon Glyph="&#xE8DA;"/>
+                                    <TextBlock Text="选取目录" Margin="5,0,0,0"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </muxc:Expander>
+                </StackPanel>
+                <StackPanel Style="{StaticResource ContentPanelStyle}">
+                    <Grid CornerRadius="4,4,0,0" Style="{ThemeResource TileStyle}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="4"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="PlayerControl" Content="&#xF5B0;" ToolTipService.ToolTip="播放" IsEnabled="False" Click="Pause_Resume" Style="{StaticResource IconButtonStyle}"/>
+                        <TextBlock x:Name="NameDisplayer" Text="（未选择）" Style="{StaticResource SubtitleTextBlockStyle}" Margin="48,0,0,0" Grid.ColumnSpan="5"/>
+                        <TextBlock x:Name="ProgressDisplayer" Text="--:--:--" Grid.Row="2"/>
+                        <Slider x:Name="PlayerProgessControl" Maximum="0" IsThumbToolTipEnabled="False" HorizontalContentAlignment="Stretch" Grid.Row="2" Grid.Column="2"/>
+                        <TextBlock x:Name="TotalTimeDisplayer" Text="--:--:--" Grid.Row="2" Grid.Column="4"/>
+                    </Grid>
+                    <muxc:Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="0,0,4,4">
+                        <muxc:Expander.Header>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE93C;" HorizontalAlignment="Left"/>
+                                <TextBlock Text="录音文件" VerticalAlignment="Center" Margin="5,0,0,0" Grid.Column="1"/>
+                            </Grid>
+                        </muxc:Expander.Header>
+                        <ListView x:Name="RecordsList" SelectionChanged="PlayRecordFile" MaxHeight="400" Padding="0,0,14,0">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="ws:StorageFile" xmlns:ws="using:Windows.Storage">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon Glyph="&#xE8D6;"/>
+                                        <TextBlock Text="{x:Bind Name}" TextWrapping="Wrap" Grid.Column="2"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </muxc:Expander>
+                </StackPanel>
+                <muxc:Expander Loaded="LoadConfig" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <muxc:Expander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="30"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE790;" HorizontalAlignment="Left"/>
+                            <TextBlock Text="应用主题" VerticalAlignment="Center" Margin="3,0,0,0" Grid.Column="1"/>
+                            <TextBlock x:Name="CurAppThemeDisplay" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" Grid.Column="2"/>
+                        </Grid>
+                    </muxc:Expander.Header>
+                    <muxc:RadioButtons SelectionChanged="AppThemeChanged" HorizontalAlignment="Left" Margin="10,0,0,0">
+                        <x:String>浅色</x:String>
+                        <x:String>深色</x:String>
+                        <x:String>跟随系统</x:String>
+                    </muxc:RadioButtons>
+                </muxc:Expander>
+                <muxc:Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <muxc:Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <FontIcon Glyph="&#xE946;" Margin="0,0,10,0"/>
+                            <TextBlock Text="关于应用" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                        </StackPanel>
+                    </muxc:Expander.Header>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Height="32" HorizontalAlignment="Stretch">
+                            <FontIcon Glyph="&#xE74C;" Margin="10,0,10,0"/>
+                            <TextBlock Text="应用名称：" VerticalAlignment="Center" Margin="3,0,3,0"/>
+                            <muxc:ImageIcon Width="24" Margin="4,4,4,4">
+                                <muxc:ImageIcon.Source>
+                                    <BitmapImage UriSource="{x:Bind local:MainPage.AppIcon}"/>
+                                </muxc:ImageIcon.Source>
+                            </muxc:ImageIcon>
+                            <TextBlock Text="{x:Bind local:MainPage.AppName}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="3,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Height="32" HorizontalAlignment="Stretch">
+                            <FontIcon Glyph="&#xE77B;" Margin="10,0,10,0"/>
+                            <TextBlock Text="开发者：" VerticalAlignment="Center" Margin="3,0,3,0"/>
+                            <TextBlock Text="{x:Bind local:MainPage.Developer}" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Height="32" HorizontalAlignment="Stretch">
+                            <FontIcon Glyph="&#xE73A;" Margin="10,0,10,0"/>
+                            <TextBlock Text="版本：" VerticalAlignment="Center" Margin="3,0,3,0"/>
+                            <TextBlock Text="{x:Bind local:MainPage.Version}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </muxc:Expander>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+
+</Page>
