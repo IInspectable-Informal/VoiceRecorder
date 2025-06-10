@@ -19,25 +19,15 @@ namespace winrt::VoiceRecorder::implementation
         DirPicker.FileTypeFilter().Append(L"*");
         Updater = _Player.SystemMediaTransportControls().DisplayUpdater();
         _Player.MediaOpened({ this, &MainPage::PrepareSMTC });
-        _Player.MediaFailed([this](auto&, auto& args)
+        _Player.MediaFailed([this](auto const&, auto const& args)
         {
-            Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [this, &args]()
+            auto argsCopy = args.as<MediaPlayerFailedEventArgs>();
+            auto errorMessage = argsCopy.ErrorMessage();
+            Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [this, errorMessage]()
             {
-                ShowInfo(muxc::InfoBarSeverity::Error, args.ErrorMessage().data());
-                PlayerControl().IsEnabled(false); RecordsList().IsEnabled(true);
-            }).get();
-        });
-        _Player.PlaybackSession().PlaybackStateChanged([this](auto& session, auto&)
-        {
-            Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [this, &session]()
-            {
-                byte state = static_cast<byte>(session.PlaybackState()); bool hasPlayingMedia = state >= 0x03;
-                if (state >= 3)
-                {
-                    PlayerControl().Content(box_value(state - 0x03 ? L"\xF5B0" : L"\xF8AE"));
-                    ToolTipService::SetToolTip(PlayerControl(), box_value(state - 0x03 ? L"播放" : L"暂停"));
-                } PlayerControl().IsEnabled(hasPlayingMedia);
-            }).get();
+                ShowInfo(muxc::InfoBarSeverity::Error, errorMessage);
+                RecordsList().IsEnabled(true);
+            });
         });
     }
 
@@ -52,10 +42,21 @@ namespace winrt::VoiceRecorder::implementation
         //Dlg.RequestedTheme(sender.ActualTheme());
     }
 
+    void MainPage::EditSelf(IInspectable const&, IInspectable const&)
+    {
+        auto const& mediaTC = PlayerUI().TransportControls();
+        if (mediaTC.IsLoaded())
+        {
+            auto const& button = mediaTC.as<IControlProtected>().GetTemplateChild(L"CastButton");
+            if (button)
+            { button.as<AppBarButton>().Visibility(Visibility::Collapsed); }
+        }
+    }
+
     void MainPage::LoadConfig(IInspectable const& sender, RoutedEventArgs const&)
     {
-        SetBinder(PlayerProgessControl(), RangeBase::ValueProperty(), box_value(_Player.PlaybackSession().Position()), BindingMode::TwoWay, *this, 0, 0, box_value(L"FromPlayer"));
-        SetBinder(PlayerProgessControl(), RangeBase::MaximumProperty(), box_value(_Player.PlaybackSession().NaturalDuration()), BindingMode::OneWay, *this, 0, 0, box_value(L"FromPlayer"));
+        PlayerUI().SetMediaPlayer(_Player);
+        //auto const& mediaTC = PlayerUI().TransportControls();
         int const& i2 = (unbox_value<int>(AppDC.Values().Lookup(L"AppTheme")) + 2) % 3;
         ChangeThemeText(i2); sender.as<muxc::Expander>().Content().as<muxc::RadioButtons>().SelectedIndex(i2);
         IPropertySet const& propSet = AppDC.Values();
@@ -88,12 +89,14 @@ namespace winrt::VoiceRecorder::implementation
         AppDC.Values().Insert(L"AppTheme", box_value((AppTheme + 1) % 3));
     }
 
-    void MainPage::RefreshAudioInputDevices(IInspectable const&, RoutedEventArgs const&)
+    fire_and_forget MainPage::RefreshAudioInputDevices(IInspectable const&, RoutedEventArgs const&)
     {
         RecordButton().IsEnabled(false);
+        SelectedDevice().IsEnabled(false);
+        SelectedDevice().PlaceholderText(L"正在获取可用设备");
         SelectedDevice().SelectedIndex(-1);
         _Devices.Clear();
-        DeviceInformationCollection const& devs = DeviceInformation::FindAllAsync(MediaDevice::GetAudioCaptureSelector()).get();
+        DeviceInformationCollection const& devs = co_await DeviceInformation::FindAllAsync(MediaDevice::GetAudioCaptureSelector());
         uint32_t const& size = devs.Size(); IPropertySet const& propSet = AppDC.Values();
         hstring const& devId = propSet.HasKey(L"DeviceId") ? propSet.Lookup(L"DeviceId").as<hstring>() : L"";
         if (size > 0)
@@ -104,8 +107,9 @@ namespace winrt::VoiceRecorder::implementation
                 _Devices.Append(dev);
                 if (dev.Id() == devId)
                 { SelectedDevice().SelectedIndex(i); }
-            } SelectedDevice().PlaceholderText(L"请选择音频输入设备");
-        } else { SelectedDevice().PlaceholderText(L"没有可用的音频输入设备"); }
+            } SelectedDevice().PlaceholderText(L"请选择麦克风");
+        } else { SelectedDevice().PlaceholderText(L"没有可用的麦克风"); }
+        SelectedDevice().IsEnabled(true);
     }
 
     void MainPage::NotifySelectionChanged(IInspectable const&, SelectionChangedEventArgs const&)
@@ -123,7 +127,6 @@ namespace winrt::VoiceRecorder::implementation
 
     void MainPage::Pause_Resume(IInspectable const&, RoutedEventArgs const&)
     {
-        PlayerControl().IsEnabled(false);
         if (_Player.PlaybackSession().PlaybackState() == MediaPlaybackState::Playing)
         { _Player.Pause(); }
         else { _Player.Play(); }
@@ -133,7 +136,8 @@ namespace winrt::VoiceRecorder::implementation
     {
         if (!IsTracking && RecordsList().SelectedIndex() != index)
         {
-            PlayerControl().IsEnabled(false); RecordsList().IsEnabled(false); _Player.Pause();
+            RecordsList().IsEnabled(false); Info().IsOpen(false); _Player.Pause(); TotalTimeDisplayer().Text(L"--:--:--");
+
             index = RecordsList().SelectedIndex();
             if (index != -1)
             { _Player.Source(MediaSource::CreateFromStream(_Records.GetAt(index).OpenAsync(FileAccessMode::Read).get(), _Records.GetAt(index).ContentType())); }
@@ -236,11 +240,12 @@ namespace winrt::VoiceRecorder::implementation
             AudioStream.Seek(0); fileStream.Seek(0);
             co_await RandomAccessStream::CopyAndCloseAsync(AudioStream, fileStream);
             AudioStream.Close(); fileStream = nullptr; AudioStream = nullptr;
+            ShowInfo(muxc::InfoBarSeverity::Success, L"录音已成功保存！");
         }
         catch (hresult_error const& ex)
-        { ShowInfo(muxc::InfoBarSeverity::Error, ex.message() + L"\nHRESULT: 0x" + ToHex(ex.code())); }
+        { ShowInfo(muxc::InfoBarSeverity::Error, L"发生错误：" + ex.message() + L"\nHRESULT: 0x" + ToHex(ex.code())); }
         catch (...)
-        { ShowInfo(muxc::InfoBarSeverity::Error, L"\nHRESULT: 0x" + ToHex(to_hresult())); }
+        { ShowInfo(muxc::InfoBarSeverity::Error, L"发生了未知错误\nHRESULT: 0x" + ToHex(to_hresult())); }
         LoudnessDisplayer().IsIndeterminate(false);
         DurationDisplayer().Text(L"00 : 00 : 00 . 00");
         SetSelectorsAvalibility(true);
@@ -362,6 +367,22 @@ namespace winrt::VoiceRecorder::implementation
         _Player.PlaybackSession().Position(TimeSpan(0));
         co_await Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [this]()
         {
+            if (_Player.PlaybackSession().NaturalDuration().count() > 0)
+            {
+                int64_t totalSeconds = _Player.PlaybackSession().NaturalDuration().count() / 10000000;
+
+                int hh = static_cast<int>(totalSeconds / 3600);
+                int mm = static_cast<int>((totalSeconds % 3600) / 60);
+                int ss = static_cast<int>(totalSeconds % 60);
+
+                TotalTimeDisplayer().Text(DoubleToFormattedString(hh, 2, L'0') + L":" + 
+                                          DoubleToFormattedString(mm, 2, L'0') + L":" + 
+                                          DoubleToFormattedString(ss, 2, L'0'));
+            }
+            else
+            {
+                TotalTimeDisplayer().Text(L"00:00:00"); // 默认值
+            }
             Updater.Type(MediaPlaybackType::Music);
             Updater.MusicProperties().Title(_Records.GetAt(index).Name());
             Updater.Update(); 
@@ -371,10 +392,18 @@ namespace winrt::VoiceRecorder::implementation
     }
 
     //Static properties
-
     hstring MainPage::Version()
     {
         PackageVersion const& Ver = Package::Current().Id().Version();
         return to_hstring(Ver.Major) + L"." + to_hstring(Ver.Minor) + L"." + to_hstring(Ver.Build) + L"." + to_hstring(Ver.Revision);
+    }
+
+    //Destructor
+    MainPage::~MainPage()
+    {
+        for (auto const& item : Recorders)
+        { item.second.Close(); }
+        Recorders.clear();
+        _Player.Close();
     }
 }

@@ -35,7 +35,6 @@
                     </Setter.Value>
                 </Setter>
             </Style>
-            <local:MainPage x:Key="SelfConverter"/>
         </ResourceDictionary>
     </Page.Resources>
 
@@ -44,7 +43,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel x:Name="AppTitleBar" ActualThemeChanged="ChangeTitleBarTheme" Orientation="Horizontal" Background="Transparent" HorizontalAlignment="Stretch">
+        <StackPanel ActualThemeChanged="ChangeTitleBarTheme" Orientation="Horizontal" Background="Transparent" HorizontalAlignment="Stretch">
             <muxc:ImageIcon Source="Assets\Square44x44Logo.png" Height="24" HorizontalAlignment="Left" Margin="4,4,5,4"/>
             <TextBlock Text="{x:Bind local:MainPage.AppName}" FontSize="15" VerticalAlignment="Center"/>
         </StackPanel>
@@ -98,7 +97,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE720;"/>
-                            <TextBlock Text="录音设备" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,5,0" Grid.Column="1"/>
+                            <TextBlock Text="麦克风" TextWrapping="Wrap" VerticalAlignment="Center" Margin="5,0,5,0" Grid.Column="1"/>
                             <ComboBox x:Name="SelectedDevice" HorizontalAlignment="Right" Grid.Column="2">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="wde:DeviceInformation" xmlns:wde="using:Windows.Devices.Enumeration">
@@ -160,21 +159,20 @@
                     <Grid CornerRadius="4,4,0,0" Style="{ThemeResource TileStyle}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="4"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="8"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="8"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="PlayerControl" Content="&#xF5B0;" ToolTipService.ToolTip="播放" IsEnabled="False" Click="Pause_Resume" Style="{StaticResource IconButtonStyle}"/>
-                        <TextBlock x:Name="NameDisplayer" Text="（未选择）" Style="{StaticResource SubtitleTextBlockStyle}" Margin="48,0,0,0" Grid.ColumnSpan="5"/>
-                        <TextBlock x:Name="ProgressDisplayer" Text="--:--:--" Grid.Row="2"/>
-                        <Slider x:Name="PlayerProgessControl" Maximum="0" IsThumbToolTipEnabled="False" HorizontalContentAlignment="Stretch" Grid.Row="2" Grid.Column="2"/>
-                        <TextBlock x:Name="TotalTimeDisplayer" Text="--:--:--" Grid.Row="2" Grid.Column="4"/>
+                        <TextBlock x:Name="NameDisplayer" Text="（未选择）" Style="{StaticResource SubtitleTextBlockStyle}" Margin="8,0,0,0" Grid.ColumnSpan="2"/>
+                        <MediaPlayerElement x:Name="PlayerUI" AreTransportControlsEnabled="True" Grid.Row="1">
+                            <MediaPlayerElement.TransportControls>
+                                <MediaTransportControls LayoutUpdated="EditSelf" IsCompact="True" IsZoomButtonVisible="False" IsVolumeButtonVisible="False" IsFullWindowButtonVisible="False"
+                                                        Margin="-8,0,0,-7"/>
+                            </MediaPlayerElement.TransportControls>
+                        </MediaPlayerElement>
+                        <TextBlock x:Name="TotalTimeDisplayer" Text="--:--:--" VerticalAlignment="Center" Grid.Row="1" Grid.Column="1"/>
                     </Grid>
                     <muxc:Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="0,0,4,4">
                         <muxc:Expander.Header>

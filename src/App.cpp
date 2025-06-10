@@ -11,8 +11,9 @@ namespace winrt::VoiceRecorder::implementation
     App::App()
     {
         Suspending({ this, &App::OnSuspending });
-        if (!AppDC.Values().HasKey(L"AppTheme"))
-        { AppDC.Values().Insert(L"AppTheme", box_value(0)); }
+        auto const& propSet = AppDC.Values();
+        if (!propSet.HasKey(L"AppTheme"))
+        { propSet.Insert(L"AppTheme", box_value(0)); }
         #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
         UnhandledException([this](IInspectable const&, UnhandledExceptionEventArgs const& e)
         {
@@ -49,7 +50,8 @@ namespace winrt::VoiceRecorder::implementation
 
     fire_and_forget App::CreateView()
     {
-        if (!Inited) { Inited = true; InitView(); }
+        if (!Inited)
+        { Inited = true; InitView(); }
         else
         {
             co_await resume_foreground(CoreApplication::CreateNewView().Dispatcher());
@@ -61,17 +63,18 @@ namespace winrt::VoiceRecorder::implementation
 
     int App::InitView()
     {
-        Window CurWin = Window::Current();
+        Window const& CurWin = Window::Current();
         Frame rootFrame = Frame();
         CoreApplication::GetCurrentView().TitleBar().ExtendViewIntoTitleBar(true);
-        ApplicationView AppView = ApplicationView::GetForCurrentView();
-        ApplicationViewTitleBar TitleBar = AppView.TitleBar();
+        ApplicationView const& AppView = ApplicationView::GetForCurrentView();
+        ApplicationViewTitleBar const& TitleBar = AppView.TitleBar();
         TitleBar.ButtonBackgroundColor(Colors::Transparent());
         TitleBar.ButtonInactiveBackgroundColor(Colors::Transparent());
         rootFrame.RequestedTheme(static_cast<ElementTheme>(unbox_value<int>(AppDC.Values().Lookup(L"AppTheme"))));
         rootFrame.Navigate(xaml_typename<local::MainPage>());
         CurWin.Content(rootFrame);
         CurWin.Activate();
+        rootFrame = nullptr;
         return AppView.Id();
     }
 }

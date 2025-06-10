@@ -41,9 +41,10 @@ ns winrt::VoiceRecorder::implementation
         MediaPlayer Player() { return _Player; }
         //Events
         void ChangeTitleBarTheme(FrameworkElement const&, IInspectable const&);
+        void EditSelf(IInspectable const&, IInspectable const&);
         void LoadConfig(IInspectable const&, RoutedEventArgs const&);
         void AppThemeChanged(IInspectable const&, SelectionChangedEventArgs const&);
-        void RefreshAudioInputDevices(IInspectable const& = nullptr, RoutedEventArgs const& = nullptr);
+        fire_and_forget RefreshAudioInputDevices(IInspectable const& = nullptr, RoutedEventArgs const& = nullptr);
         void NotifySelectionChanged(IInspectable const& = nullptr, SelectionChangedEventArgs const& = nullptr);
         void Pause_Resume(IInspectable const&, RoutedEventArgs const&);
         void PlayRecordFile(IInspectable const&, SelectionChangedEventArgs const&);
@@ -60,6 +61,9 @@ ns winrt::VoiceRecorder::implementation
         static Uri AppIcon() { return Package::Current().Logo(); }
         static hstring Developer() { return Package::Current().PublisherDisplayName(); }
         static hstring Version();
+
+        //Destructor
+        ~MainPage();
     private:
         Stopwatch RecorderStopwatch;
         FolderPicker DirPicker;
