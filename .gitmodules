@@ -1,0 +1,4 @@
+[submodule "ffmpeg"]
+	path = StopwatchCore
+	url = https://github.com/IInspectable-Informal/StopwatchCore
+	branch = main
