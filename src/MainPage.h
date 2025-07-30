@@ -81,7 +81,7 @@ ns winrt::VoiceRecorder::implementation
         fire_and_forget Tracker(IStorageQueryResultBase const&, IInspectable const&); bool IsTracking = false;
         void SetSelectorsAvalibility(bool const&);
         void ShowInfo(muxc::InfoBarSeverity const&, hstring const&);
-        void Looper(Stopwatch const&, IInspectable const&);
+        fire_and_forget Looper(Stopwatch const&, IInspectable const&);
         fire_and_forget PrepareSMTC(MediaPlayer const&, IInspectable const&);
     };
 }
