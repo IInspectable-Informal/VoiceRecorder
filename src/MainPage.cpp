@@ -347,7 +347,7 @@ namespace winrt::VoiceRecorder::implementation
         Info().IsOpen(true);
     }
 
-    void MainPage::Looper(Stopwatch const& sender, IInspectable const&)
+    fire_and_forget MainPage::Looper(Stopwatch const& sender, IInspectable const&)
     {
         auto tms = sender.Duration();
         auto hh = DoubleDivision(tms, (1000 * 60 * 60));
@@ -356,6 +356,7 @@ namespace winrt::VoiceRecorder::implementation
         tms -= (1000 * 60 * mm);
         auto ss = DoubleDivision(tms, 1000);
         auto ms = DoubleDivision(tms - 1000 * ss, 10);
+        co_await resume_foreground(Dispatcher());
         DurationDisplayer().Text(DoubleToFormattedString(hh, 2, L'0') + L" : " + 
                                  DoubleToFormattedString(mm, 2, L'0') + L" : " + 
                                  DoubleToFormattedString(ss, 2, L'0') + L" . " + 
